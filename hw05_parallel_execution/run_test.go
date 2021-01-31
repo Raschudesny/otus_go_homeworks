@@ -108,15 +108,15 @@ func TestRun(t *testing.T) {
 		tasksCount := workersCount
 
 		tasks := make([]Task, 0, tasksCount)
-		blockignCh := make(chan struct{})
+		blockingCh := make(chan struct{})
 		tasks = append(tasks, func() error {
 			defer atomic.AddInt32(&runTasksCount, 1)
-			blockignCh <- struct{}{}
+			blockingCh <- struct{}{}
 			return nil
 		})
 		tasks = append(tasks, func() error {
 			defer atomic.AddInt32(&runTasksCount, 1)
-			<-blockignCh
+			<-blockingCh
 			return nil
 		})
 		err := Run(tasks, workersCount, tasksCount)
