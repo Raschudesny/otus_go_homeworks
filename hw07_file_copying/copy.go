@@ -12,11 +12,16 @@ import (
 var (
 	ErrOffsetExceedsFileSize = errors.New("offset exceeds file size")
 	ErrLimitIsNegative       = errors.New("limit number must be not negative")
+	ErrOffsetIsNegative      = errors.New("offset number must be not negative ")
 )
 
+//nolint:cyclop
 func Copy(fromPath, toPath string, offset, limit int64) error {
 	if limit < 0 {
 		return ErrLimitIsNegative
+	}
+	if offset < 0 {
+		return ErrOffsetIsNegative
 	}
 
 	// open fromPath file
