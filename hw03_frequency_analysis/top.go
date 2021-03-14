@@ -44,7 +44,7 @@ func Top10(input string) []string {
 		return textStatistic[idx1].frequency > textStatistic[idx2].frequency
 	})
 
-	result := make([]string, 0, len(textStatistic))
+	result := make([]string, 0, 10)
 	for idx, word := range textStatistic {
 		if idx > 9 {
 			break
