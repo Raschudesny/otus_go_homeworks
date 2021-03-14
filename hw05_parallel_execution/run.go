@@ -1,4 +1,4 @@
-package hw05_parallel_execution //nolint:golint,stylecheck
+package hw05parallelexecution
 
 import (
 	"errors"
@@ -13,7 +13,7 @@ type Task func() error
 
 // Run starts tasks in N goroutines and stops its work when receiving M errors from tasks.
 func Run(tasks []Task, n int, m int) error {
-	if n == 0 {
+	if n <= 0 {
 		return ErrNoWorkersProvided
 	}
 	if len(tasks) == 0 {
