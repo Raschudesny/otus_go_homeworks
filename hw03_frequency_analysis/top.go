@@ -1,4 +1,5 @@
-package hw03_frequency_analysis //nolint:golint,stylecheck
+package hw03frequencyanalysis
+
 import (
 	"regexp"
 	"sort"
