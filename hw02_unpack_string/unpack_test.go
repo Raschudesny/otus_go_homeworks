@@ -1,4 +1,4 @@
-package hw02_unpack_string //nolint:golint,stylecheck
+package hw02unpackstring
 
 import (
 	"testing"
@@ -46,24 +46,24 @@ func TestUnpack(t *testing.T) {
 			expected: "aab",
 		},
 		{
-			input: "-42",
+			input:    "-42",
 			expected: "",
-			err: ErrInvalidString,
+			err:      ErrInvalidString,
 		},
 		{
-			input: "asdf asdf",
+			input:    "asdf asdf",
 			expected: "asdf asdf",
 		},
 		{
-			input: `qwe😤3rty`,
+			input:    `qwe😤3rty`,
 			expected: `qwe😤😤😤rty`,
 		},
 		{
-			input: `🍎3🍐🍒7`,
+			input:    `🍎3🍐🍒7`,
 			expected: `🍎🍎🍎🍐🍒🍒🍒🍒🍒🍒🍒`,
 		},
 		{
-			input: `yo0yo0yo0`,
+			input:    `yo0yo0yo0`,
 			expected: "yyy",
 		},
 	} {
