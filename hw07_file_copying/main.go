@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"log"
 )
 
 var (
@@ -18,5 +19,14 @@ func init() {
 
 func main() {
 	flag.Parse()
-	// Place your code here
+	if len(from) == 0 {
+		log.Fatalf("Error, -from flag is empty ")
+	}
+	if len(to) == 0 {
+		log.Fatalf("Error, -to flag is empty ")
+	}
+	if err := Copy(from, to, offset, limit); err != nil {
+		log.Fatalf("Error during file copying: %v", err)
+	}
+	log.Println("Done!")
 }
