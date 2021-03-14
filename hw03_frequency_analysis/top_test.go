@@ -1,4 +1,4 @@
-package hw03_frequency_analysis //nolint:golint
+package hw03frequencyanalysis
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 )
 
 // Change to true if needed
-var taskWithAsteriskIsCompleted = false
+var taskWithAsteriskIsCompleted = true
 
 var text = `Как видите, он  спускается  по  лестнице  вслед  за  своим
 	другом   Кристофером   Робином,   головой   вниз,  пересчитывая
@@ -57,4 +57,45 @@ func TestTop10(t *testing.T) {
 			require.ElementsMatch(t, expected, Top10(text))
 		}
 	})
+}
+
+func TestEscapeWordPunctuation(t *testing.T) {
+	testsData := [...]struct {
+		name        string
+		word        string
+		escapedWord string
+	}{
+		{
+			"only punctutation",
+			"-",
+			"",
+		},
+		{
+			"without punctuation",
+			"bla",
+			"bla",
+		},
+		{
+			"with punctuation in the end",
+			"bla,",
+			"bla",
+		},
+		{
+			"with punctuation in the start",
+			",bla",
+			"bla",
+		},
+		{
+			"with punctuation in the middle",
+			"bla-bla",
+			"bla-bla",
+		},
+	}
+	for _, testData := range testsData {
+		testData := testData
+		t.Run(testData.name, func(t *testing.T) {
+			actual := EscapeWordPunctuation(testData.word)
+			require.Equal(t, testData.escapedWord, actual)
+		})
+	}
 }
