@@ -31,7 +31,7 @@ func RunCmd(cmd []string, dirEnvs Environment, ioStreams CmdIOStreams) (returnCo
 		envParts := strings.Split(envEntry, "=")
 		if len(envParts) >= 2 {
 			osEnvKey := envParts[0]
-			osEnvValue := envParts[1]
+			osEnvValue := strings.Join(envParts[1:], "=")
 			if dirEnvVal, ok := dirEnvs[osEnvKey]; ok && dirEnvVal.NeedRemove {
 				continue
 			}
