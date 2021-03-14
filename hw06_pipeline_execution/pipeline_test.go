@@ -1,4 +1,4 @@
-package hw06_pipeline_execution //nolint:golint,stylecheck
+package hw06pipelineexecution
 
 import (
 	"math/rand"
@@ -104,7 +104,7 @@ func TestPipeline(t *testing.T) {
 		dataSize := rand.Intn(30)
 		data := make([]int, 0, dataSize)
 
-		for i :=0 ; i < dataSize; i++ {
+		for i := 0; i < dataSize; i++ {
 			data = append(data, rand.Intn(100))
 		}
 
@@ -134,7 +134,7 @@ func TestPipeline(t *testing.T) {
 		dataSize := rand.Intn(30)
 		data := make([]int, 0, dataSize)
 
-		for i :=0 ; i < dataSize; i++ {
+		for i := 0; i < dataSize; i++ {
 			data = append(data, rand.Intn(100))
 		}
 
@@ -155,7 +155,6 @@ func TestPipeline(t *testing.T) {
 
 		require.Empty(t, result)
 	})
-
 
 	t.Run("in channel already closed case ", func(t *testing.T) {
 		in := make(Bi)

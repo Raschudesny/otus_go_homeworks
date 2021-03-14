@@ -1,4 +1,4 @@
-package hw06_pipeline_execution //nolint:golint,stylecheck
+package hw06pipelineexecution
 
 type (
 	In  = <-chan interface{}
@@ -40,7 +40,7 @@ func makeCloseOnErrorChannel(inputCh In, done In) Out {
 // Executes all stages(excepts nil stages) as a following pipeline
 // in -> our -> stage -> our -> stage -> our -> ... -> stage -> our -> stage -> out.
 func ExecutePipeline(in In, done In, stages ...Stage) Out {
-	var prevStageOut In = in
+	var prevStageOut = in
 	for _, stage := range stages {
 		if stage != nil {
 			prevStageOut = stage(makeCloseOnErrorChannel(prevStageOut, done))
