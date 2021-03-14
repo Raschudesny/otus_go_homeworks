@@ -15,6 +15,6 @@ func main() {
 		log.Fatalf("Erorr during reading time from NTP server: %v", err)
 	}
 
-	fmt.Printf("current time: %v\n", systemTime.Round(time.Microsecond))
-	fmt.Printf("exact time: %v\n", ntpTime.Round(time.Microsecond))
+	fmt.Printf("current time: %v\n", systemTime.Round(time.Microsecond)) //nolint:forbidigo
+	fmt.Printf("exact time: %v\n", ntpTime.Round(time.Microsecond))      //nolint:forbidigo
 }
