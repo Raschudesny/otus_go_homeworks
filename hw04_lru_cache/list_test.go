@@ -1,8 +1,9 @@
-package hw04_lru_cache //nolint:golint,stylecheck
+package hw04lrucache
 
 import (
-	"github.com/stretchr/testify/require"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestList(t *testing.T) {
