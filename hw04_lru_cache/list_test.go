@@ -1,4 +1,4 @@
-package hw04_lru_cache //nolint:golint,stylecheck
+package hw04lrucache
 
 import (
 	"testing"
@@ -47,5 +47,25 @@ func TestList(t *testing.T) {
 			elems = append(elems, i.Value.(int))
 		}
 		require.Equal(t, []int{70, 80, 60, 40, 10, 30, 50}, elems)
+	})
+
+	t.Run("diffrent types in a list at the same time", func(t *testing.T) {
+		l := NewList()
+		l.PushBack("123")
+		l.PushBack(123)
+		l.PushBack(123.123)
+		l.PushBack(struct{ a string }{"asd"})
+
+		require.Equal(t, "123", l.Front().Value)
+		l.Remove(l.Front())
+
+		require.Equal(t, 123, l.Front().Value)
+		l.Remove(l.Front())
+
+		require.Equal(t, 123.123, l.Front().Value)
+		l.Remove(l.Front())
+		require.Equal(t, struct{ a string }{"asd"}, l.Front().Value)
+		l.Remove(l.Front())
+		require.Equal(t, 0, l.Len())
 	})
 }
