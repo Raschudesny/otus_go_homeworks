@@ -1,6 +1,6 @@
 module github.com/Raschudesny/otus_go_homeworks/hw07_file_copying
 
-go 1.15
+go 1.16
 
 require (
 	github.com/cheggaaa/pb/v3 v3.0.6

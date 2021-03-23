@@ -5,8 +5,8 @@
 Hello, OTUS!
 ```
 
-Для переворота строки следует воспользоваться возможностями 
-[github.com/golang/example/stringutil](https://github.com/golang/example/tree/master/stringutil).
+Для переворота строки следует воспользоваться возможностями
+[golang.org/x/example/stringutil](https://github.com/golang/example/tree/master/stringutil).
 
 Кроме этого необходимо исправить **go.mod** так, чтобы для данного модуля работала
 команда `go get`, а полученный **go.sum** закоммитить.

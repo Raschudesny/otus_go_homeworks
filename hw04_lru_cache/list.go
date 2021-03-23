@@ -105,5 +105,5 @@ func (l *list) MoveToFront(item *listItem) {
 }
 
 func NewList() List {
-	return &list{}
+	return new(list)
 }

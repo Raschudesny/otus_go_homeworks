@@ -25,12 +25,12 @@ $ go-telnet --timeout=3s 1.1.1.1 123
 
 Примеры работы:
 
-1) Сервер обрывает соединение 
+1) Сервер обрывает соединение
 ```bash
 $ nc -l localhost 4242
 Hello from NC
 I'm telnet client
-Bye, client!          
+Bye, client!
 ^C
 ```
 
@@ -40,7 +40,7 @@ $ go-telnet --timeout=5s localhost 4242
 Hello from NC
 I'm telnet client
 Bye, client!
-Bye-bye 
+Bye-bye
 ...Connection was closed by peer
 ```
 
@@ -101,7 +101,8 @@ back!
 #### Зачёт от 7 баллов
 
 ### Подсказки
-- `flag.StringVar`
+- `flag.StringVar`, `flag.DurationVar`
 - `net.JoinHostPort`, `net.DialTimeout`
 - `bufio` / `io`
+- `signal.NotifyContext`
 - https://stackoverflow.com/questions/51317968/write-on-a-closed-net-conn-but-returned-nil-error
