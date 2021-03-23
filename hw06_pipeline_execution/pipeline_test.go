@@ -16,7 +16,7 @@ const (
 
 func TestPipeline(t *testing.T) {
 	// Stage generator
-	g := func(name string, f func(v interface{}) interface{}) Stage {
+	g := func(_ string, f func(v interface{}) interface{}) Stage {
 		return func(in In) Out {
 			out := make(Bi)
 			go func() {
