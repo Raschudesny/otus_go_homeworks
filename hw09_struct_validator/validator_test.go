@@ -1,4 +1,4 @@
-package hw09_struct_validator //nolint:golint,stylecheck
+package hw09structvalidator
 
 import (
 	"encoding/json"
@@ -36,7 +36,7 @@ type (
 	}
 )
 
-func TestValidate(t *testing.T) {
+func TestValidateStruct(t *testing.T) {
 	tests := []struct {
 		in          interface{}
 		expectedErr error
