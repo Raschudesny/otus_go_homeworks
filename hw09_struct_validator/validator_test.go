@@ -42,15 +42,19 @@ func TestValidateStruct(t *testing.T) {
 		expectedErr error
 	}{
 		{
-			// Place your code here
+			// Place your code here.
 		},
 		// ...
-		// Place your code here
+		// Place your code here.
 	}
 
 	for i, tt := range tests {
 		t.Run(fmt.Sprintf("case %d", i), func(t *testing.T) {
-			// Place your code here
+			tt := tt
+			t.Parallel()
+
+			// Place your code here.
+			_ = tt
 		})
 	}
 }
