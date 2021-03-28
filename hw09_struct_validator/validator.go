@@ -1,14 +1,34 @@
 package hw09structvalidator
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
-	"regexp"
-	"strconv"
 	"strings"
 )
 
-const ValidationTag = "validate"
+const (
+	ValidationTag                  = "validate"
+	ValidationRulesSeparator       = "|"
+	ValidationRulesValuesSeparator = ","
+)
+
+var (
+	ErrOnlyStructValidationAllowed = errors.New("non struct argument passed for validation")
+	ErrStrLengthRuleIsInvalid      = errors.New("string length rule is invalid")
+	ErrStrRegexpRuleIsInvalid      = errors.New("string regexp rule is invalid")
+	ErrStrInRuleIsInvalid          = errors.New("string in rule is invalid")
+	ErrIntMaxRuleIsInvalid         = errors.New("int max rule is invalid")
+	ErrIntMinRuleIsInvalid         = errors.New("int min rule is invalid")
+	ErrIntInRuleIsInvalid          = errors.New("int in rule is invalid")
+	ErrTypeRuleIsInvalid           = errors.New("field type is invalid")
+	ErrStrLengthRuleWrongFormat    = errors.New("string length rule wrong format")
+	ErrStrRegexpRuleWrongFormat    = errors.New("string regexp rule wrong format")
+	ErrStrInRuleWrongFormat        = errors.New("string in rule wrong format")
+	ErrIntMaxRuleWrongFormat       = errors.New("int max rule wrong format")
+	ErrIntMinRuleWrongFormat       = errors.New("int min rule wrong format")
+	ErrIntInRuleWrongFormat        = errors.New("int in rule wrong format")
+)
 
 type ValidationError struct {
 	Field string
@@ -18,115 +38,77 @@ type ValidationError struct {
 type ValidationErrors []ValidationError
 
 func (v ValidationErrors) Error() string {
-	panic("implement me")
-}
-
-type ValidationRule interface {
-	IsValid(value reflect.Value) error
-}
-
-type StringLenRule struct {
-	length int
-}
-
-// TODO pointers ???
-func (s StringLenRule) IsValid(value reflect.Value) error {
-	switch value.Kind() {
-	case reflect.String:
-		if len(value.String()) != s.length {
-			return fmt.Errorf("field length != %d", s.length)
-		}
-	case reflect.Slice, reflect.Array:
-		for i := 0; i < value.Len(); i++ {
-			elem := value.Index(i)
-			if elem.Kind() != reflect.String {
-				return fmt.Errorf("one of field values is not a string")
-			}
-			if len(elem.String()) != s.length {
-				return fmt.Errorf("one of field values has wrong length != %d", s.length)
-			}
-		}
-	default:
-		return fmt.Errorf("field is not a string or string array")
-	}
-	return nil
-}
-
-type StringRegexpRule struct {
-	regexp string
-}
-
-func (s StringRegexpRule) IsValid(value reflect.Value) error {
-	switch value.Kind() {
-	case reflect.String:
-		ruleRegexp, err := regexp.Compile(value.String())
-		if err != nil {
-			return fmt.Errorf("regexp rule for field has incorrect format")
-		}
-		if !ruleRegexp.MatchString(value.String()) {
-			return fmt.Errorf("field is not matching it's regular expression")
-		}
-	case reflect.Slice, reflect.Array:
-	default:
-		return fmt.Errorf("field is not a string or string array")
-	}
-}
-
-func extractValidationRuleValue(ruleStr string, ruleStrPrefix string) string {
-	if len(ruleStr) <= 0 {
-		return ""
-	}
-
-	if strings.HasPrefix(ruleStr, ruleStrPrefix) {
-		ruleStrParts := strings.SplitN(ruleStr, ":", 2)
-		if len(ruleStrParts) > 1 {
-			return ruleStrParts[1]
+	var b strings.Builder
+	for i, err := range v {
+		b.WriteString(err.Field)
+		b.WriteString(" field")
+		b.WriteString(" - ")
+		b.WriteString(err.Err.Error())
+		if i != len(v)-1 {
+			b.WriteString("\n")
 		}
 	}
-	return ""
+	return b.String()
 }
 
-func extractValidationRules(tagValue string) []ValidationRule {
-	rulesList := strings.Split(tagValue, "|")
+func extractValidationRules(tagValue string, fieldKind reflect.Kind) ([]ValidationRule, error) {
+	rulesList := strings.Split(tagValue, ValidationRulesSeparator)
 	validationRules := make([]ValidationRule, 0, len(rulesList))
 	for _, ruleStr := range rulesList {
+		var err error
+		var rule ValidationRule
 		switch {
 		case strings.HasPrefix(ruleStr, "len:"):
-			length, err := strconv.Atoi(extractValidationRuleValue(ruleStr, "len:"))
-			if err == nil {
-				validationRules = append(validationRules, StringLenRule{length})
+			rule, err = NewStringLenRule(ruleStr)
+			validationRules = append(validationRules, rule)
+		case strings.HasPrefix(ruleStr, "regexp:"):
+			rule, err = NewStringRegexpRule(ruleStr)
+			validationRules = append(validationRules, rule)
+		case strings.HasPrefix(ruleStr, "min:"):
+			rule, err = NewIntMinRule(ruleStr)
+			validationRules = append(validationRules, rule)
+		case strings.HasPrefix(ruleStr, "max:"):
+			rule, err = NewIntMaxRule(ruleStr)
+			validationRules = append(validationRules, rule)
+		case strings.HasPrefix(ruleStr, "in:"):
+			if fieldKind == reflect.Int {
+				rule, err = NewIntInRule(ruleStr)
+				validationRules = append(validationRules, rule)
 			}
-		case strings.HasPrefix(ruleStr, "regex:"):
-			extractValidationRuleValue()
+			if fieldKind == reflect.String {
+				rule, err = NewStringInRule(ruleStr)
+				validationRules = append(validationRules, rule)
+			}
 		}
-
-	}
-}
-
-func validateField(fieldName string, value reflect.Value, rules []ValidationRule) ValidationErrors {
-	errors := ValidationErrors{}
-	for _, rule := range rules {
-		if err := rule.IsValid(value); err != nil {
-			errors = append(errors, ValidationError{fieldName, err})
+		if err != nil {
+			return nil, err
 		}
 	}
-	return errors
+	return validationRules, nil
 }
 
 func ValidateStruct(vi interface{}) error {
-	errors := ValidationErrors{}
+	var validationErrors ValidationErrors
 	v := reflect.ValueOf(vi)
 	if v.Kind() != reflect.Struct {
-		return fmt.Errorf("validate struct error: expected a struct but recieved %T", vi)
+		return fmt.Errorf("struct validation error: %w: expected a struct but received %T", ErrOnlyStructValidationAllowed, vi)
 	}
 	t := v.Type()
 	for i := 0; i < t.NumField(); i++ {
 		fieldValue := v.Field(i)
 		fieldType := t.Field(i)
-		if tagValue, ok := fieldType.Tag.Lookup(ValidationTag); ok && len(tagValue) > 0 {
-			validationRules := make([]ValidationRule, 0)
-			errors = append(errors, validateField(fieldType.Name, fieldValue, validationRules)...)
+		if tagValue, ok := fieldType.Tag.Lookup(ValidationTag); ok && len(tagValue) > 0 && fieldValue.CanInterface() {
+			rules, err := extractValidationRules(tagValue, fieldValue.Kind())
+			if err != nil {
+				return err
+			}
+			for _, rule := range rules {
+				validationErrors = append(validationErrors, rule.Validate(fieldType.Name, fieldValue)...)
+			}
 		}
 	}
-	return nil
+	if len(validationErrors) == 0 {
+		return nil
+	}
+	return validationErrors
 }
