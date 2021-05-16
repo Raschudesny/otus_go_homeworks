@@ -2,7 +2,6 @@ package hw10programoptimization
 
 import (
 	"bufio"
-	"encoding/json"
 	"fmt"
 	"io"
 	"strings"
@@ -26,7 +25,7 @@ func GetDomainStat(r io.Reader, domain string) (DomainStat, error) {
 	userEmail := &UserEmail{}
 	for scanner.Scan() {
 		*userEmail = UserEmail{}
-		if err := json.Unmarshal(scanner.Bytes(), userEmail); err != nil {
+		if err := userEmail.UnmarshalJSON(scanner.Bytes()); err != nil {
 			return nil, err
 		}
 
