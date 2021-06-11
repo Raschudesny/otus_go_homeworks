@@ -64,5 +64,4 @@ func main() {
 		cancelFunc()
 	}(client)
 	<-ctx.Done()
-	fmt.Println("Program finished. Bye!")
 }
