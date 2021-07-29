@@ -19,10 +19,8 @@ logger:
 api:
   http:
     port: 1234
-    connectionTimeout: 10
   grpc:
     port: 56789
-    connectionTimeout: 10
 storage:
   inMemoryStorage: true
   db:
@@ -65,9 +63,7 @@ func TestConfigReading(t *testing.T) {
 	require.Equal(t, "info", config.Logger.Level)
 	require.Equal(t, "some-log-output", config.Logger.File)
 	require.Equal(t, 1234, config.API.HTTP.Port)
-	require.Equal(t, 10, config.API.HTTP.ConnectionTimeout)
 	require.Equal(t, 56789, config.API.GRPC.Port)
-	require.Equal(t, 10, config.API.GRPC.ConnectionTimeout)
 	require.True(t, config.Storage.UseMemoryStorage)
 	require.Equal(t, 12345, config.Storage.DB.Port)
 	require.Equal(t, "some-awesome-postgres-url", config.Storage.DB.Host)

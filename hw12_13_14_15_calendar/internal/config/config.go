@@ -56,13 +56,11 @@ type APIConfig struct {
 }
 
 type GRPCApiConfig struct {
-	Port              int
-	ConnectionTimeout int `mapstructure:"connectionTimeout"`
+	Port int
 }
 
 type HTTPApiConfig struct {
-	Port              int
-	ConnectionTimeout int `mapstructure:"connectionTimeout"`
+	Port int
 }
 
 func (db *DBConfig) fallthroughToDefaults() {
@@ -115,17 +113,9 @@ func (conf *APIConfig) fallthroughToDefaults() {
 		conf.HTTP.Port = 80
 		zap.L().Error(configErrorCausedFallthroughToDefaultsMsg, zap.Error(ErrHTTPPortIsInvalid), zap.Int("default", conf.HTTP.Port))
 	}
-	if conf.HTTP.ConnectionTimeout == 0 {
-		conf.HTTP.ConnectionTimeout = 10
-		zap.L().Error(configErrorCausedFallthroughToDefaultsMsg, zap.Error(ErrHTTPTimeoutIsInvalid), zap.Int("default", conf.HTTP.ConnectionTimeout))
-	}
 	if conf.GRPC.Port == 0 {
 		conf.GRPC.Port = 50051
 		zap.L().Error(configErrorCausedFallthroughToDefaultsMsg, zap.Error(ErrGRPCPortIsInvalid), zap.Int("default", conf.GRPC.Port))
-	}
-	if conf.GRPC.ConnectionTimeout == 0 {
-		conf.GRPC.ConnectionTimeout = 10
-		zap.L().Error(configErrorCausedFallthroughToDefaultsMsg, zap.Error(ErrGRPCTimeoutIsInvalid), zap.Int("default", conf.GRPC.ConnectionTimeout))
 	}
 }
 

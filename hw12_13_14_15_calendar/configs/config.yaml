@@ -4,10 +4,8 @@ logger:
 api:
   http:
     port: 8090
-    connectionTimeout: 10
   grpc:
     port: 50051
-    connectionTimeout: 10
 storage:
   inMemoryStorage: true
   db:

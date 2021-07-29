@@ -32,8 +32,8 @@ func NewHTTPApi(cnf config.HTTPApiConfig, app server.Application) *API {
 	srv := &http.Server{
 		Handler:      loggingMiddleware(router),
 		Addr:         net.JoinHostPort("localhost", strconv.Itoa(cnf.Port)),
-		ReadTimeout:  time.Duration(cnf.ConnectionTimeout) * time.Second,
-		WriteTimeout: time.Duration(cnf.ConnectionTimeout) * time.Second,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 5 * time.Second,
 	}
 	return &API{srv}
 }

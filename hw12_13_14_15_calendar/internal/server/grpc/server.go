@@ -156,7 +156,7 @@ func (a API) Stop() {
 
 func NewGRPCApi(cfg config.GRPCApiConfig, app server.Application) *API {
 	srv := grpc.NewServer(
-		grpc.ConnectionTimeout(time.Duration(cfg.ConnectionTimeout)*time.Second),
+		grpc.ConnectionTimeout(5*time.Second),
 		grpc.UnaryInterceptor(grpc_zap.UnaryServerInterceptor(zap.L())),
 		grpc.StreamInterceptor(grpc_zap.StreamServerInterceptor(zap.L())),
 	)

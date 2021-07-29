@@ -172,8 +172,7 @@ func (s *HTTPApiSuite) SetupTest() {
 
 	// for router tests purposes creating httptest.Server
 	api := NewHTTPApi(config.HTTPApiConfig{
-		Port:              8888,
-		ConnectionTimeout: 10,
+		Port: 8888,
 	}, s.mockedApp)
 	s.testServer = httptest.NewUnstartedServer(api.server.Handler)
 }
