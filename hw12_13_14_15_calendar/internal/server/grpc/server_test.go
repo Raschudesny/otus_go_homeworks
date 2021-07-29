@@ -31,7 +31,7 @@ func TestGrpc(t *testing.T) {
 	suite.Run(t, &GRPCTestSuite{})
 }
 
-func (s *GRPCTestSuite) SetupTest() {
+func (s *GRPCTestSuite) SetupSuite() {
 	lsnStub := bufconn.Listen(1024 * 1024)
 
 	// starting grpc server
@@ -61,7 +61,7 @@ func (s *GRPCTestSuite) SetupTest() {
 	s.grpcClientConn = conn
 }
 
-func (s *GRPCTestSuite) TearDownTest() {
+func (s *GRPCTestSuite) TearDownSuite() {
 	defer s.cancelFunc()
 	if err := s.grpcClientConn.Close(); err != nil {
 		s.T().Log("error during connection closing: ", err)

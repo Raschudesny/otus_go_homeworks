@@ -140,7 +140,7 @@ type HTTPApiSuite struct {
 	cancelFunc     context.CancelFunc
 }
 
-func (s *HTTPApiSuite) SetupTest() {
+func (s *HTTPApiSuite) SetupSuite() {
 	s.ctx, s.cancelFunc = context.WithTimeout(context.Background(), time.Second*5)
 	s.ctl = gomock.NewController(s.T())
 	s.mockedApp = server.NewMockApplication(s.ctl)
@@ -177,7 +177,7 @@ func (s *HTTPApiSuite) SetupTest() {
 	s.testServer = httptest.NewServer(api.server.Handler)
 }
 
-func (s *HTTPApiSuite) TearDownTest() {
+func (s *HTTPApiSuite) TearDownSuite() {
 	defer s.testServer.Close()
 	defer s.cancelFunc()
 }
@@ -318,7 +318,7 @@ func (s *HTTPApiSuite) TestUpdateEvent() {
 
 	s.mockedApp.EXPECT().UpdateEvent(
 		gomock.Any(),
-		s.testEvent,
+		gomock.Eq(s.testEvent),
 	).Return(nil)
 
 	client := http.Client{
