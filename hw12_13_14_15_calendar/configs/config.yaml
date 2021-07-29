@@ -1,10 +1,15 @@
 logger:
   level: info
-  file: ./log_output
+  file: ./bin/calendar.log
 api:
-  port: 9933
+  http:
+    port: 8090
+    connectionTimeout: 10
+  grpc:
+    port: 50051
+    connectionTimeout: 10
 storage:
-  inMemoryStorage: false
+  inMemoryStorage: true
   db:
     host: localhost
     port: 5432

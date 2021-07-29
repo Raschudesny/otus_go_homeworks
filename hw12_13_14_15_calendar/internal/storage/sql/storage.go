@@ -14,12 +14,15 @@ type DBStorage struct {
 	db *sqlx.DB
 }
 
-func New() *DBStorage {
+func NewDBStorage() *DBStorage {
 	return &DBStorage{}
 }
 
 func (s *DBStorage) Connect(ctx context.Context, dsn string) (err error) {
 	s.db, err = sqlx.ConnectContext(ctx, "pgx", dsn)
+	s.db.SetMaxOpenConns(20)
+	s.db.SetMaxIdleConns(5)
+	s.db.SetConnMaxLifetime(time.Minute * 3)
 	if err != nil {
 		return fmt.Errorf("failed to connect to db: %w", err)
 	}
@@ -49,7 +52,7 @@ func (s *DBStorage) AddEvent(ctx context.Context, event storage.Event) error {
 	return nil
 }
 
-func (s *DBStorage) UpdateEvent(ctx context.Context, eventID string, event storage.Event) error {
+func (s *DBStorage) UpdateEvent(ctx context.Context, event storage.Event) error {
 	res, err := s.db.NamedExecContext(ctx, "UPDATE events SET title=:title, start_time=:start_time, end_time=:end_time, description=:description, owner_id=:owner_id WHERE id=:id", &event)
 	if err != nil {
 		return fmt.Errorf("error during updating event: %w", err)
@@ -91,7 +94,7 @@ func (s *DBStorage) FindEventsInInterval(ctx context.Context, intervalStart, int
 		return nil, fmt.Errorf("sql execution error: %w", err)
 	}
 	defer func() {
-		err = rows.Close()
+		err := rows.Close()
 		zap.L().Error("error closing sql rows", zap.Error(err))
 	}()
 
@@ -123,7 +126,7 @@ func (s *DBStorage) FindEventsByID(ctx context.Context, eventIDs ...string) ([]s
 			return nil, fmt.Errorf("sql execution error: %w", err)
 		}
 		defer func() {
-			err = rows.Close()
+			err := rows.Close()
 			zap.L().Error("error closing sql rows", zap.Error(err))
 		}()
 
@@ -150,7 +153,7 @@ func (s *DBStorage) FindEventsByID(ctx context.Context, eventIDs ...string) ([]s
 
 	rows, err := s.db.QueryxContext(ctx, resultQuery, args)
 	defer func() {
-		err = rows.Close()
+		err := rows.Close()
 		zap.L().Error("error closing sql rows", zap.Error(err))
 	}()
 	if err != nil {

@@ -1,24 +1,33 @@
 package sqlstorage
 
 import (
+	"context"
+	"fmt"
+	"log"
+	"testing"
+	"time"
+
+	"github.com/Raschudesny/otus_go_homeworks/hw12_13_14_15_calendar/internal/storage"
 	_ "github.com/jackc/pgx/v4/stdlib"
+	"github.com/jmoiron/sqlx"
+	"github.com/stretchr/testify/require"
 )
 
-/*
-TODO no integration test for now
+const DSN = "host=localhost port=5432 user=danny password=danny dbname=test connect_timeout=10"
 
 func TestSomeFunc(t *testing.T) {
+	t.Skip()
 	timeout, cancelFunc := context.WithTimeout(context.Background(), time.Second*20)
 	defer cancelFunc()
-	dsn := "host=localhost port=5432 user=danny password=danny dbname=test connect_timeout=10"
-	db, err := sqlx.ConnectContext(timeout, "pgx", dsn)
+
+	db, err := sqlx.ConnectContext(timeout, "pgx", DSN)
 	require.NoError(t, err)
 	err = db.PingContext(timeout)
 	require.NoError(t, err)
 	fmt.Println("Successful connect to db")
 
-	insertSql := "INSERT INTO events (id, title, start_time, end_time, description, owner_id) VALUES ('92061df3-0f38-4c5b-b7a2-40515ca5a514','Birthday', '2021-04-03 00:00:00 +0300', '2021-04-03 23:59:59 +0300', 'it is my birthday party time', 'f1a200f5-3f8e-4c28-b287-82376033eaae');"
-	_, err = db.ExecContext(timeout, insertSql)
+	insertSQL := "INSERT INTO events (id, title, start_time, end_time, description, owner_id) VALUES ('92061df3-0f38-4c5b-b7a2-40515ca5a514','Birthday', '2021-04-03 00:00:00 +0300', '2021-04-03 23:59:59 +0300', 'it is my birthday party time', 'f1a200f5-3f8e-4c28-b287-82376033eaae');"
+	_, err = db.ExecContext(timeout, insertSQL)
 	require.NoError(t, err)
 
 	sql := "select * from events where owner_id = :owner_id"
@@ -26,6 +35,10 @@ func TestSomeFunc(t *testing.T) {
 		"owner_id": "f1a200f5-3f8e-4c28-b287-82376033eaae",
 	})
 	require.NoError(t, err)
+	defer func() {
+		err := rows.Close()
+		log.Println("error closing sql rows: ", err)
+	}()
 
 	foundEvents := make([]storage.Event, 0)
 	var event storage.Event
@@ -43,11 +56,11 @@ func TestSomeFunc(t *testing.T) {
 }
 
 func TestSql(t *testing.T) {
-	dsn := "host=localhost port=5432 user=danny password=danny dbname=test connect_timeout=10"
-	DBStorage := New()
+	t.Skip()
+	DBStorage := NewDBStorage()
 	timeout, cancelFunc := context.WithTimeout(context.Background(), time.Second*20)
 	defer cancelFunc()
-	err := DBStorage.Connect(timeout, dsn)
+	err := DBStorage.Connect(timeout, DSN)
 	require.NoError(t, err)
 
 	err = DBStorage.AddEvent(timeout, storage.Event{
@@ -74,11 +87,11 @@ func TestSql(t *testing.T) {
 }
 
 func TestSql2(t *testing.T) {
-	dsn := "host=localhost port=5432 user=danny password=danny dbname=test connect_timeout=10"
-	DBStorage := New()
+	t.Skip()
+	DBStorage := NewDBStorage()
 	timeout, cancelFunc := context.WithTimeout(context.Background(), time.Second*20)
 	defer cancelFunc()
-	err := DBStorage.Connect(timeout, dsn)
+	err := DBStorage.Connect(timeout, DSN)
 	require.NoError(t, err)
 
 	err = DBStorage.DeleteEvent(timeout, "03cd6323-3590-45ec-a462-4e41dcffd8aa")
@@ -90,14 +103,14 @@ func TestSql2(t *testing.T) {
 }
 
 func TestSql3(t *testing.T) {
-	dsn := "host=localhost port=5432 user=danny password=danny dbname=test connect_timeout=10"
-	DBStorage := New()
+	t.Skip()
+	DBStorage := NewDBStorage()
 	timeout, cancelFunc := context.WithTimeout(context.Background(), time.Second*20)
 	defer cancelFunc()
-	err := DBStorage.Connect(timeout, dsn)
+	err := DBStorage.Connect(timeout, DSN)
 	require.NoError(t, err)
 
-	err = DBStorage.UpdateEvent(timeout, "03cd6323-3590-45ec-a462-4e41dcffd8aa", storage.Event{
+	err = DBStorage.UpdateEvent(timeout, storage.Event{
 		ID:          "03cd6323-3590-45ec-a462-4e41dcffd8aa",
 		Title:       "some other title",
 		StartTime:   time.Now(),
@@ -111,19 +124,19 @@ func TestSql3(t *testing.T) {
 }
 
 func TestFindSql(t *testing.T) {
-	dsn := "host=localhost port=5432 user=danny password=danny dbname=test connect_timeout=10"
-	DBStorage := New()
+	t.Skip()
+	DBStorage := NewDBStorage()
 	timeout, cancelFunc := context.WithTimeout(context.Background(), time.Second*20)
 	defer cancelFunc()
-	err := DBStorage.Connect(timeout, dsn)
+	err := DBStorage.Connect(timeout, DSN)
 	require.NoError(t, err)
 	defer func() {
 		err = DBStorage.Close()
 		require.NoError(t, err)
 	}()
 
-	events, err := DBStorage.FindEventsInInterval(timeout, storage.StartOfDay(time.Now()), storage.EndOfDay(time.Now().AddDate(0, 0, 1)))
+	events, err := DBStorage.FindEventsInInterval(timeout, time.Now(), time.Now().AddDate(0, 0, 1))
 	require.NoError(t, err)
 	require.Equal(t, 2, len(events))
 	fmt.Println(events)
-}*/
+}

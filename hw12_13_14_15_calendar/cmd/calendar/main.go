@@ -2,18 +2,17 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
-	"net/http"
 	"os/signal"
 	"sync"
 	"syscall"
 	"time"
 
-	"github.com/Raschudesny/otus_go_homeworks/hw12_13_14_15_calendar/internal/api"
+	"github.com/Raschudesny/otus_go_homeworks/hw12_13_14_15_calendar/internal/app"
 	"github.com/Raschudesny/otus_go_homeworks/hw12_13_14_15_calendar/internal/config"
 	"github.com/Raschudesny/otus_go_homeworks/hw12_13_14_15_calendar/internal/logger"
+	"github.com/Raschudesny/otus_go_homeworks/hw12_13_14_15_calendar/internal/server/grpc"
 	internalhttp "github.com/Raschudesny/otus_go_homeworks/hw12_13_14_15_calendar/internal/server/http"
 	memorystorage "github.com/Raschudesny/otus_go_homeworks/hw12_13_14_15_calendar/internal/storage/memory"
 	sqlstorage "github.com/Raschudesny/otus_go_homeworks/hw12_13_14_15_calendar/internal/storage/sql"
@@ -22,9 +21,9 @@ import (
 	"go.uber.org/zap"
 )
 
-var configFilePath string
+const ServerShutdownTimeout = time.Second * 3
 
-var ServerShutdownTimeout = time.Second * 3
+var configFilePath string
 
 func init() {
 	pflag.StringVarP(&configFilePath, "config", "c", "./configs/config.yaml", "Path to configuration file")
@@ -57,14 +56,12 @@ func mainImpl() error {
 		return fmt.Errorf("erro during logger init: %w", err)
 	}
 
-	cancelCtx, cancelFunc := context.WithCancel(context.Background())
-	defer cancelFunc()
-	notifyCtx, stop := signal.NotifyContext(cancelCtx, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
+	notifyCtx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 	defer stop()
 
-	var repo api.EventRepository
+	var repo app.EventRepository
 	if cfg.Storage.UseMemoryStorage {
-		repo = memorystorage.New()
+		repo = memorystorage.NewMemStorage()
 	} else {
 		dsn := fmt.Sprintf(
 			"host=%s port=%d user=%s database=%s password=%s sslmode=disable",
@@ -73,7 +70,7 @@ func mainImpl() error {
 			cfg.Storage.DB.Username,
 			cfg.Storage.DB.DB,
 			cfg.Storage.DB.Password)
-		dbStorage := sqlstorage.New()
+		dbStorage := sqlstorage.NewDBStorage()
 		if err := dbStorage.Connect(notifyCtx, dsn); err != nil {
 			return fmt.Errorf("failed to init db storage: %w", err)
 		}
@@ -86,18 +83,24 @@ func mainImpl() error {
 	}
 	zap.L().Info("calendar service storage started...")
 
-	apiService := api.New(cfg, repo)
-	server := internalhttp.NewServer(cfg, apiService)
+	apiService := app.New(repo)
+	httpAPI := internalhttp.NewHTTPApi(cfg.API.HTTP, apiService)
+	grpcAPI := grpc.NewGRPCApi(cfg.API.GRPC, apiService)
 
 	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go gracefulShutdown(notifyCtx, server, &wg)
+	wg.Add(4)
 
-	if err := server.Start(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-		zap.L().Error("Failed to start http server", zap.Error(err))
-		// manually calling server shutdown
-		cancelFunc()
-	}
+	go shutdownHTTP(notifyCtx, httpAPI, &wg)
+	go func() {
+		defer wg.Done()
+		httpAPI.Start(stop)
+	}()
+
+	go shutdownGRPC(notifyCtx, grpcAPI, &wg)
+	go func() {
+		defer wg.Done()
+		grpcAPI.Start(stop)
+	}()
 
 	// checking all server connections surely canceled
 	wg.Wait()
@@ -105,15 +108,21 @@ func mainImpl() error {
 	return nil
 }
 
-func gracefulShutdown(notifyCtx context.Context, server *internalhttp.Server, wg *sync.WaitGroup) {
+func shutdownHTTP(ctx context.Context, api *internalhttp.API, wg *sync.WaitGroup) {
 	defer wg.Done()
-	<-notifyCtx.Done()
+	<-ctx.Done()
 
 	ctx, cancel := context.WithTimeout(context.Background(), ServerShutdownTimeout)
 	defer cancel()
 
-	if err := server.Stop(ctx); err != nil {
+	if err := api.Stop(ctx); err != nil {
 		// Error from closing listeners, or context timeout
-		zap.L().Error("Failed to stop http server", zap.Error(err))
+		zap.L().Error("Error during stopping http server", zap.Error(err))
 	}
+}
+
+func shutdownGRPC(ctx context.Context, api *grpc.API, wg *sync.WaitGroup) {
+	defer wg.Done()
+	<-ctx.Done()
+	api.Stop()
 }

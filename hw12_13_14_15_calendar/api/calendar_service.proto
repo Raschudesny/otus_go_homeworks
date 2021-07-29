@@ -1,0 +1,82 @@
+syntax = "proto3";
+
+package calendar;
+
+option go_package = ".;pb";
+
+
+import "google/protobuf/timestamp.proto";
+
+message Event {
+    string id = 1;     // ID - уникальный идентификатор события
+    string title = 2;  // Заголовок
+    google.protobuf.Timestamp start_time = 3;  // Дата начала события
+    google.protobuf.Timestamp end_time = 4;  // Дата окончания события
+    string description = 5;   // Описание события - длинный текст, опционально;
+    string owner_id = 6;  // ID пользователя, владельца события
+}
+
+
+message AddEventRequest {
+    message CreateEventData {
+        string title = 1;
+        google.protobuf.Timestamp start_time = 2;
+        google.protobuf.Timestamp end_time = 3;
+        string description = 4;
+        string owner_id = 6;
+    }
+    CreateEventData create_event_data = 1;
+}
+
+message AddEventResponse {
+    Event event = 1;
+}
+
+message UpdateEventRequest {
+    Event event = 1;
+}
+
+message UpdateEventResponse {
+    Event event = 1;
+}
+
+message DeleteEventRequest {
+    string event_id = 1;
+}
+
+message DeleteEventResponse {
+}
+
+message FindDayEventsRequest {
+    google.protobuf.Timestamp day = 1;
+}
+
+message FindDayEventsResponse {
+    repeated Event events = 1;
+}
+
+message FindWeekEventsRequest {
+    google.protobuf.Timestamp week = 1;
+}
+
+message FindWeekEventsResponse {
+    repeated Event events = 1;
+}
+
+message FindMonthEventsRequest {
+    google.protobuf.Timestamp month = 1;
+}
+
+message FindMonthEventsResponse {
+    repeated Event events = 1;
+}
+
+service CalendarService {
+    rpc AddEvent(AddEventRequest) returns (AddEventResponse) {}
+    rpc UpdateEvent(UpdateEventRequest) returns (UpdateEventResponse) {}
+    rpc DeleteEvent(DeleteEventRequest) returns (DeleteEventResponse) {}
+    rpc FindDayEvents(FindDayEventsRequest) returns (FindDayEventsResponse) {}
+    rpc FindWeekEvents(FindWeekEventsRequest) returns (FindWeekEventsResponse) {}
+    rpc FindMonthEvents(FindMonthEventsRequest) returns (FindMonthEventsResponse) {}
+}
+
