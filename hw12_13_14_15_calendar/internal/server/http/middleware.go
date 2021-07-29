@@ -7,6 +7,8 @@ import (
 	"go.uber.org/zap"
 )
 
+var RequestTimeFormat string = "25/Feb/2020:19:11:24 +0600"
+
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		delegator := NewResponseWriterDelegator(w)
