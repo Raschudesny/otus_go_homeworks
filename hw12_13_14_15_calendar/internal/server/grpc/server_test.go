@@ -74,8 +74,8 @@ func (s *GRPCTestSuite) TestAddEvent() {
 
 	data := pb.AddEventRequest_CreateEventData{
 		Title:       faker.Sentence(),
-		StartTime:   timestamppb.New(time.Now()),
-		EndTime:     timestamppb.New(time.Now().AddDate(0, 0, 1)),
+		StartTime:   timestamppb.New(time.Now().Truncate(time.Nanosecond).Local()),
+		EndTime:     timestamppb.New(time.Now().AddDate(0, 0, 1).Truncate(time.Nanosecond).Local()),
 		Description: faker.Paragraph(),
 		OwnerId:     faker.UUIDHyphenated(),
 	}
@@ -97,8 +97,8 @@ func (s *GRPCTestSuite) TestUpdateEvent() {
 	// adding event
 	data := pb.AddEventRequest_CreateEventData{
 		Title:       faker.Sentence(),
-		StartTime:   timestamppb.New(time.Now()),
-		EndTime:     timestamppb.New(time.Now().AddDate(0, 0, 1)),
+		StartTime:   timestamppb.New(time.Now().Truncate(time.Nanosecond).Local()),
+		EndTime:     timestamppb.New(time.Now().AddDate(0, 0, 1).Truncate(time.Nanosecond).Local()),
 		Description: faker.Paragraph(),
 		OwnerId:     faker.UUIDHyphenated(),
 	}
@@ -125,8 +125,8 @@ func (s *GRPCTestSuite) TestDeleteEvent() {
 	// adding event
 	data := pb.AddEventRequest_CreateEventData{
 		Title:       faker.Sentence(),
-		StartTime:   timestamppb.New(time.Now()),
-		EndTime:     timestamppb.New(time.Now().AddDate(0, 0, 1)),
+		StartTime:   timestamppb.New(time.Now().Truncate(time.Nanosecond).Local()),
+		EndTime:     timestamppb.New(time.Now().AddDate(0, 0, 1).Truncate(time.Nanosecond).Local()),
 		Description: faker.Paragraph(),
 		OwnerId:     faker.UUIDHyphenated(),
 	}
@@ -145,7 +145,7 @@ func (s *GRPCTestSuite) TestFindEvents() {
 	client := pb.NewCalendarServiceClient(s.grpcClientConn)
 
 	// adding event
-	t := time.Now()
+	t := time.Now().Truncate(time.Nanosecond).Local()
 	data := pb.AddEventRequest_CreateEventData{
 		Title:       faker.Sentence(),
 		StartTime:   timestamppb.New(t),

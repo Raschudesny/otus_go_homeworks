@@ -29,8 +29,8 @@ func TestMapToPbFormat(t *testing.T) {
 	for i := 0; i < 20; i++ {
 		testEvent := storage.Event{}
 		err := faker.FakeData(&testEvent)
-		testEvent.StartTime = testEvent.StartTime.Truncate(time.Nanosecond)
-		testEvent.EndTime = testEvent.EndTime.Truncate(time.Nanosecond)
+		testEvent.StartTime = testEvent.StartTime.Truncate(time.Nanosecond).Local()
+		testEvent.EndTime = testEvent.EndTime.Truncate(time.Nanosecond).Local()
 		require.NoError(t, err, "error during fake event generation")
 
 		testCases = append(testCases, FromStorageTestCase{

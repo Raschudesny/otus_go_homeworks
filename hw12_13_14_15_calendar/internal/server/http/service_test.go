@@ -50,8 +50,8 @@ func (s *MarshallingSuite) SetupTest() {
 		err := faker.FakeData(&testEvent)
 		s.Require().NoError(err, "error during fake event generation")
 		// monotonic clock leads to fail during require.Equal >_<
-		testEvent.StartTime = testEvent.StartTime.Truncate(time.Nanosecond)
-		testEvent.EndTime = testEvent.EndTime.Truncate(time.Nanosecond)
+		testEvent.StartTime = testEvent.StartTime.Truncate(time.Nanosecond).Local()
+		testEvent.EndTime = testEvent.EndTime.Truncate(time.Nanosecond).Local()
 		s.testData = append(s.testData, testEvent)
 	}
 }
@@ -148,25 +148,25 @@ func (s *HTTPApiSuite) SetupTest() {
 	// faking test only CreateEventData
 	err := faker.FakeData(&s.testCreateData)
 	// monotonic clock leads to fail during require.Equal >_<
-	s.testCreateData.StartTime = s.testCreateData.StartTime.Truncate(time.Nanosecond)
-	s.testCreateData.EndTime = s.testCreateData.EndTime.Truncate(time.Nanosecond)
+	s.testCreateData.StartTime = s.testCreateData.StartTime.Truncate(time.Nanosecond).Local()
+	s.testCreateData.EndTime = s.testCreateData.EndTime.Truncate(time.Nanosecond).Local()
 	s.Require().NoError(err, "error during fake create data generation")
 
 	// faking test only storage.Event
 	err = faker.FakeData(&s.testEvent)
 	// monotonic clock leads to fail during require.Equal >_<
-	s.testEvent.StartTime = s.testEvent.StartTime.Truncate(time.Nanosecond)
-	s.testEvent.EndTime = s.testEvent.EndTime.Truncate(time.Nanosecond)
+	s.testEvent.StartTime = s.testEvent.StartTime.Truncate(time.Nanosecond).Local()
+	s.testEvent.EndTime = s.testEvent.EndTime.Truncate(time.Nanosecond).Local()
 	s.Require().NoError(err, "error during fake event generation")
 
 	// faking test only []storage.Event
 	var testEvent storage.Event
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 10; i++ {
 		err := faker.FakeData(&testEvent)
 		s.Require().NoError(err, "error during fake event generation")
 		// monotonic clock leads to fail during require.Equal >_<
-		testEvent.StartTime = testEvent.StartTime.Truncate(time.Nanosecond)
-		testEvent.EndTime = testEvent.EndTime.Truncate(time.Nanosecond)
+		testEvent.StartTime = testEvent.StartTime.Truncate(time.Nanosecond).Local()
+		testEvent.EndTime = testEvent.EndTime.Truncate(time.Nanosecond).Local()
 		s.testSlice = append(s.testSlice, testEvent)
 	}
 
