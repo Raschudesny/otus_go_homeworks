@@ -24,3 +24,11 @@ type Event struct {
 	// ID пользователя, владельца события
 	OwnerID string `faker:"uuid_hyphenated" db:"owner_id" json:"owner_id"`
 }
+
+// IsEqual - check two events is equal, this function is mostly used in tests.
+func (e1 Event) IsEqual(e2 Event) bool {
+	if e1.ID != e2.ID || e1.Title != e2.Title || e1.Description != e2.Description || e1.OwnerID != e2.OwnerID {
+		return false
+	}
+	return e1.StartTime.Equal(e2.StartTime) && e1.EndTime.Equal(e2.EndTime)
+}

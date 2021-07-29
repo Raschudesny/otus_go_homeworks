@@ -52,9 +52,22 @@ func TestMapToPbFormat(t *testing.T) {
 		t.Run(testData.name, func(t *testing.T) {
 			t.Parallel()
 			actual := MapToPbFormat(testData.input)
-			require.Equal(t, testData.expect, actual)
+			require.True(t, checkTwoPbEventsEqual(testData.expect, actual))
 		})
 	}
+}
+
+func checkTwoPbEventsEqual(e1 *pb.Event, e2 *pb.Event) bool {
+	if e1.Id != e2.Id || e1.Title != e2.Title || e1.Description != e2.Description || e1.OwnerId != e2.OwnerId {
+		return false
+	}
+	if !e1.StartTime.AsTime().Equal(e2.StartTime.AsTime()) {
+		return false
+	}
+	if !e1.EndTime.AsTime().Equal(e2.EndTime.AsTime()) {
+		return false
+	}
+	return true
 }
 
 func TestMapToStorageFormat(t *testing.T) {
@@ -62,8 +75,8 @@ func TestMapToStorageFormat(t *testing.T) {
 	for i := 0; i < 20; i++ {
 		testEvent := storage.Event{}
 		err := faker.FakeData(&testEvent)
-		testEvent.StartTime = testEvent.StartTime.Truncate(time.Nanosecond)
-		testEvent.EndTime = testEvent.EndTime.Truncate(time.Nanosecond)
+		testEvent.StartTime = testEvent.StartTime.Truncate(time.Nanosecond).Local()
+		testEvent.EndTime = testEvent.EndTime.Truncate(time.Nanosecond).Local()
 		require.NoError(t, err, "error during fake event generation")
 
 		testCases = append(testCases, ToStorageTestCase{
@@ -79,7 +92,7 @@ func TestMapToStorageFormat(t *testing.T) {
 			t.Parallel()
 			actual, err := MapToStorageFormat(testData.input)
 			require.NoError(t, err)
-			require.Equal(t, testData.expect, actual)
+			require.True(t, testData.expect.IsEqual(*actual))
 		})
 	}
 }

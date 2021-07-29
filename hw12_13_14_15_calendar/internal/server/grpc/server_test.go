@@ -86,8 +86,8 @@ func (s *GRPCTestSuite) TestAddEvent() {
 	s.Require().NoError(err)
 	s.Require().Equal(data.Title, resp.GetEvent().GetTitle())
 	s.Require().Equal(data.Description, resp.GetEvent().GetDescription())
-	s.Require().Equal(data.StartTime.AsTime(), resp.GetEvent().GetStartTime().AsTime())
-	s.Require().Equal(data.EndTime.AsTime(), resp.GetEvent().GetEndTime().AsTime())
+	s.Require().True(data.StartTime.AsTime().Equal(resp.GetEvent().GetStartTime().AsTime()))
+	s.Require().True(data.EndTime.AsTime().Equal(resp.GetEvent().GetEndTime().AsTime()))
 	s.Require().Equal(data.OwnerId, resp.GetEvent().GetOwnerId())
 }
 
@@ -116,7 +116,7 @@ func (s *GRPCTestSuite) TestUpdateEvent() {
 	s.Require().NoError(err)
 	actual, err := MapToStorageFormat(updateResp.Event)
 	s.Require().NoError(err)
-	s.Require().Equal(expected, actual)
+	s.Require().True(expected.IsEqual(*actual))
 }
 
 func (s *GRPCTestSuite) TestDeleteEvent() {
@@ -161,15 +161,33 @@ func (s *GRPCTestSuite) TestFindEvents() {
 	// finding day events
 	findDayResp, err := client.FindDayEvents(s.ctx, &pb.FindDayEventsRequest{Day: timestamppb.New(t)})
 	s.Require().NoError(err)
-	s.Require().Contains(findDayResp.Events, resp.GetEvent())
+	s.Require().True(PbEventsContains(findDayResp.Events, resp.GetEvent()))
 
 	// finding week events
 	findWeekResp, err := client.FindWeekEvents(s.ctx, &pb.FindWeekEventsRequest{Week: timestamppb.New(t)})
 	s.Require().NoError(err)
-	s.Require().Contains(findWeekResp.Events, resp.GetEvent())
+	s.Require().True(PbEventsContains(findWeekResp.Events, resp.GetEvent()))
 
 	// finding month events
 	findMonthResp, err := client.FindWeekEvents(s.ctx, &pb.FindWeekEventsRequest{Week: timestamppb.New(t)})
 	s.Require().NoError(err)
-	s.Require().Contains(findMonthResp.Events, resp.GetEvent())
+	s.Require().True(PbEventsContains(findMonthResp.Events, resp.GetEvent()))
+}
+
+func PbEventsContains(events []*pb.Event, event *pb.Event) bool {
+	e2, err := MapToStorageFormat(event)
+	if err != nil {
+		return false
+	}
+
+	for _, v := range events {
+		e1, err := MapToStorageFormat(v)
+		if err != nil {
+			return false
+		}
+		if e1.IsEqual(*e2) {
+			return true
+		}
+	}
+	return false
 }

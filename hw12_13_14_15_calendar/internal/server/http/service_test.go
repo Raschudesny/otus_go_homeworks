@@ -46,7 +46,7 @@ func (s *MarshallingSuite) BuildStubRequestWithEvents(events ...storage.Event) *
 
 func (s *MarshallingSuite) SetupTest() {
 	var testEvent storage.Event
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 10; i++ {
 		err := faker.FakeData(&testEvent)
 		s.Require().NoError(err, "error during fake event generation")
 		// monotonic clock leads to fail during require.Equal >_<
@@ -67,7 +67,7 @@ func (s *MarshallingSuite) TestEmptyMarshalling() {
 	decoder := json.NewDecoder(r.Body)
 	err = decoder.Decode(&resEvent)
 	s.Require().NoError(err)
-	s.Require().Equal(testEvent, resEvent)
+	s.Require().True(testEvent.IsEqual(resEvent))
 }
 
 func (s *MarshallingSuite) TestEmptyUnmarshalling() {
@@ -77,7 +77,7 @@ func (s *MarshallingSuite) TestEmptyUnmarshalling() {
 	stubRequest := s.BuildStubRequestWithEvents(testEvent)
 	err := receiveJSON(stubRequest, &resEvent)
 	s.Require().NoError(err)
-	s.Require().Equal(testEvent, resEvent)
+	s.Require().True(testEvent.IsEqual(resEvent))
 }
 
 func (s *MarshallingSuite) TestSendJSONHelperWithSingleEvent() {
@@ -90,7 +90,7 @@ func (s *MarshallingSuite) TestSendJSONHelperWithSingleEvent() {
 	decoder := json.NewDecoder(r.Body)
 	err = decoder.Decode(&resData)
 	s.Require().NoError(err)
-	s.Require().Equal(s.testData[0], resData)
+	s.Require().True(s.testData[0].IsEqual(resData))
 }
 
 func (s *MarshallingSuite) TestSendJSONHelperWithEventSlice() {
@@ -104,7 +104,7 @@ func (s *MarshallingSuite) TestSendJSONHelperWithEventSlice() {
 	err = decoder.Decode(&resData)
 	s.Require().NoError(err)
 	s.Require().Len(resData, len(s.testData))
-	s.Require().Equal(s.testData, resData)
+	s.Require().True(IsEqual(s.testData, resData))
 }
 
 func (s *MarshallingSuite) TestReceiveJSONHelperWithSingleEvent() {
@@ -112,7 +112,7 @@ func (s *MarshallingSuite) TestReceiveJSONHelperWithSingleEvent() {
 	stubRequest := s.BuildStubRequestWithEvents(s.testData[0])
 	err := receiveJSON(stubRequest, &resData)
 	s.Require().NoError(err)
-	s.Require().Equal(s.testData[0], resData)
+	s.Require().True(s.testData[0].IsEqual(resData))
 }
 
 func (s *MarshallingSuite) TestReceiveJSONHelperWithEventSlice() {
@@ -121,7 +121,7 @@ func (s *MarshallingSuite) TestReceiveJSONHelperWithEventSlice() {
 	err := receiveJSON(stubRequest, &resData)
 	s.Require().NoError(err)
 	s.Require().Len(resData, len(s.testData))
-	s.Require().Equal(s.testData, resData)
+	s.Require().True(IsEqual(s.testData, resData))
 }
 
 func TestHTTPApi(t *testing.T) {
@@ -218,8 +218,8 @@ func (s *HTTPApiSuite) TestAddEventHandler() {
 
 	s.Require().NoError(err)
 	s.Require().Equal(s.testCreateData.Title, resEvent.Title)
-	s.Require().Equal(s.testCreateData.StartTime, resEvent.StartTime)
-	s.Require().Equal(s.testCreateData.EndTime, resEvent.EndTime)
+	s.Require().True(s.testCreateData.StartTime.Equal(resEvent.StartTime))
+	s.Require().True(s.testCreateData.EndTime.Equal(resEvent.EndTime))
 	s.Require().Equal(s.testCreateData.Description, resEvent.Description)
 	s.Require().Equal(s.testCreateData.OwnerID, resEvent.OwnerID)
 }
@@ -249,7 +249,7 @@ func (s *HTTPApiSuite) TestUpdateEventHandler() {
 	err = decoder.Decode(&resEvent)
 
 	s.Require().NoError(err)
-	s.Require().Equal(s.testEvent, resEvent)
+	s.Require().True(s.testEvent.IsEqual(resEvent))
 }
 
 func (s *HTTPApiSuite) OtherHandlers() {
@@ -305,8 +305,8 @@ func (s *HTTPApiSuite) TestAddEvent() {
 
 	s.Require().NoError(err)
 	s.Require().Equal(s.testCreateData.Title, resEvent.Title)
-	s.Require().Equal(s.testCreateData.StartTime, resEvent.StartTime)
-	s.Require().Equal(s.testCreateData.EndTime, resEvent.EndTime)
+	s.Require().True(s.testCreateData.StartTime.Equal(resEvent.StartTime))
+	s.Require().True(s.testCreateData.EndTime.Equal(resEvent.EndTime))
 	s.Require().Equal(s.testCreateData.Description, resEvent.Description)
 	s.Require().Equal(s.testCreateData.OwnerID, resEvent.OwnerID)
 }
@@ -343,7 +343,7 @@ func (s *HTTPApiSuite) TestUpdateEvent() {
 	err = decoder.Decode(&resEvent)
 
 	s.Require().NoError(err)
-	s.Require().Equal(s.testEvent, resEvent)
+	s.Require().True(s.testEvent.IsEqual(resEvent))
 }
 
 func (s *HTTPApiSuite) TestDeleteEvent() {
@@ -395,5 +395,24 @@ func (s *HTTPApiSuite) TestFindEvents() {
 	decoder := json.NewDecoder(resp.Body)
 	err = decoder.Decode(&result)
 	s.Require().NoError(err)
-	s.Require().Equal(s.testSlice, result)
+	s.Require().True(IsEqual(s.testSlice, result))
+}
+
+func IsEqual(s1 []storage.Event, s2 []storage.Event) bool {
+	if s1 == nil && s2 == nil {
+		return true
+	}
+	if s1 == nil || s2 == nil {
+		return false
+	}
+	if len(s1) != len(s2) {
+		return false
+	}
+
+	for i, e := range s1 {
+		if !e.IsEqual(s2[i]) {
+			return false
+		}
+	}
+	return true
 }
