@@ -174,10 +174,11 @@ func (s *HTTPApiSuite) SetupTest() {
 	api := NewHTTPApi(config.HTTPApiConfig{
 		Port: 8888,
 	}, s.mockedApp)
-	s.testServer = httptest.NewUnstartedServer(api.server.Handler)
+	s.testServer = httptest.NewServer(api.server.Handler)
 }
 
 func (s *HTTPApiSuite) TearDownTest() {
+	defer s.testServer.Close()
 	defer s.cancelFunc()
 }
 
@@ -191,8 +192,8 @@ func (s *HTTPApiSuite) TestAddEventHandler() {
 	s.mockedApp.EXPECT().CreateEvent(
 		gomock.Any(),
 		s.testCreateData.Title,
-		s.testCreateData.StartTime,
-		s.testCreateData.EndTime,
+		gomock.Eq(s.testCreateData.StartTime),
+		gomock.Eq(s.testCreateData.EndTime),
 		s.testCreateData.Description,
 		s.testCreateData.OwnerID,
 	).Return(storage.Event{
@@ -233,7 +234,7 @@ func (s *HTTPApiSuite) TestUpdateEventHandler() {
 
 	s.mockedApp.EXPECT().UpdateEvent(
 		gomock.Any(),
-		s.testEvent,
+		gomock.Eq(s.testEvent),
 	).Return(nil)
 	service := &Service{app: s.mockedApp}
 	service.UpdateEventHandler(w, r)
@@ -261,9 +262,6 @@ func (s *HTTPApiSuite) OtherHandlers() {
 }
 
 func (s *HTTPApiSuite) TestAddEvent() {
-	s.testServer.Start()
-	defer s.testServer.Close()
-
 	marshal, err := json.Marshal(s.testCreateData)
 	s.Require().NoError(err)
 	r, err := http.NewRequestWithContext(s.ctx, "POST", s.testServer.URL+"/calendar/add", bytes.NewBuffer(marshal))
@@ -273,8 +271,8 @@ func (s *HTTPApiSuite) TestAddEvent() {
 	s.mockedApp.EXPECT().CreateEvent(
 		gomock.Any(),
 		s.testCreateData.Title,
-		s.testCreateData.StartTime,
-		s.testCreateData.EndTime,
+		gomock.Eq(s.testCreateData.StartTime),
+		gomock.Eq(s.testCreateData.EndTime),
 		s.testCreateData.Description,
 		s.testCreateData.OwnerID,
 	).Return(storage.Event{
@@ -312,9 +310,6 @@ func (s *HTTPApiSuite) TestAddEvent() {
 }
 
 func (s *HTTPApiSuite) TestUpdateEvent() {
-	s.testServer.Start()
-	defer s.testServer.Close()
-
 	marshal, err := json.Marshal(s.testEvent)
 	s.Require().NoError(err)
 	r, err := http.NewRequestWithContext(s.ctx, "POST", s.testServer.URL+"/calendar/update", bytes.NewBuffer(marshal))
@@ -347,9 +342,6 @@ func (s *HTTPApiSuite) TestUpdateEvent() {
 }
 
 func (s *HTTPApiSuite) TestDeleteEvent() {
-	s.testServer.Start()
-	defer s.testServer.Close()
-
 	request, err := http.NewRequestWithContext(s.ctx, "POST", s.testServer.URL+"/calendar/delete/TEST_EVENT_ID", nil)
 	s.Require().NoError(err)
 
@@ -370,9 +362,6 @@ func (s *HTTPApiSuite) TestDeleteEvent() {
 }
 
 func (s *HTTPApiSuite) TestFindEvents() {
-	s.testServer.Start()
-	defer s.testServer.Close()
-
 	request, err := http.NewRequestWithContext(s.ctx, "GET", s.testServer.URL+"/calendar/find/day/2021/08/25", nil)
 	s.Require().NoError(err)
 
