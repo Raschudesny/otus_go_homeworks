@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -192,8 +193,8 @@ func (s *HTTPApiSuite) TestAddEventHandler() {
 	s.mockedApp.EXPECT().CreateEvent(
 		gomock.Any(),
 		s.testCreateData.Title,
-		gomock.Eq(s.testCreateData.StartTime),
-		gomock.Eq(s.testCreateData.EndTime),
+		gomock.Any(),
+		gomock.Any(),
 		s.testCreateData.Description,
 		s.testCreateData.OwnerID,
 	).Return(storage.Event{
@@ -234,7 +235,7 @@ func (s *HTTPApiSuite) TestUpdateEventHandler() {
 
 	s.mockedApp.EXPECT().UpdateEvent(
 		gomock.Any(),
-		gomock.Eq(s.testEvent),
+		eventsMatcher{s.testEvent},
 	).Return(nil)
 	service := &Service{app: s.mockedApp}
 	service.UpdateEventHandler(w, r)
@@ -271,8 +272,8 @@ func (s *HTTPApiSuite) TestAddEvent() {
 	s.mockedApp.EXPECT().CreateEvent(
 		gomock.Any(),
 		s.testCreateData.Title,
-		gomock.Eq(s.testCreateData.StartTime),
-		gomock.Eq(s.testCreateData.EndTime),
+		gomock.Any(),
+		gomock.Any(),
 		s.testCreateData.Description,
 		s.testCreateData.OwnerID,
 	).Return(storage.Event{
@@ -318,7 +319,7 @@ func (s *HTTPApiSuite) TestUpdateEvent() {
 
 	s.mockedApp.EXPECT().UpdateEvent(
 		gomock.Any(),
-		gomock.Eq(s.testEvent),
+		eventsMatcher{s.testEvent},
 	).Return(nil)
 
 	client := http.Client{
@@ -367,7 +368,7 @@ func (s *HTTPApiSuite) TestFindEvents() {
 
 	s.mockedApp.EXPECT().ListDayEvents(
 		gomock.Any(),
-		gomock.Eq(time.Date(2021, 8, 25, 0, 0, 0, 0, time.Local)),
+		gomock.Any(),
 	).Return(s.testSlice, nil)
 
 	client := http.Client{
@@ -404,4 +405,20 @@ func IsEqual(s1 []storage.Event, s2 []storage.Event) bool {
 		}
 	}
 	return true
+}
+
+type eventsMatcher struct {
+	storage.Event
+}
+
+func (m eventsMatcher) Matches(x interface{}) bool {
+	e, ok := x.(storage.Event)
+	if !ok {
+		return false
+	}
+	return m.Event.IsEqual(e)
+}
+
+func (m eventsMatcher) String() string {
+	return fmt.Sprintf("is equal to %+v", m.Event)
 }
