@@ -2,51 +2,57 @@ package internalhttp
 
 import (
 	"context"
+	"errors"
+	"net"
 	"net/http"
 	"strconv"
 	"time"
 
-	"github.com/Raschudesny/otus_go_homeworks/hw12_13_14_15_calendar/internal/api"
 	"github.com/Raschudesny/otus_go_homeworks/hw12_13_14_15_calendar/internal/config"
+	"github.com/Raschudesny/otus_go_homeworks/hw12_13_14_15_calendar/internal/server"
+	"github.com/gorilla/mux"
 	"go.uber.org/zap"
 )
 
-type Server struct {
+type API struct {
 	server *http.Server
-	api    api.API
 }
 
-func HelloWorldResource(w http.ResponseWriter, r *http.Request) {
-	defer func() {
-		if err := r.Body.Close(); err != nil {
-			zap.L().Error("unable to close response body for request", zap.Error(err))
-		}
-	}()
-	w.WriteHeader(http.StatusOK)
-	if _, err := w.Write([]byte("Hello World!")); err != nil {
-		zap.L().Error("http write error", zap.Error(err))
-	}
-}
+func NewHTTPApi(cnf config.HTTPApiConfig, app server.Application) *API {
+	service := Service{app}
+	router := mux.NewRouter()
+	router.HandleFunc("/calendar/add", service.AddEventHandler).Methods("POST")
+	router.HandleFunc("/calendar/update", service.UpdateEventHandler).Methods("POST")
+	router.HandleFunc("/calendar/delete/{eventId}", service.DeleteEventHandler).Methods("POST")
+	router.HandleFunc(
+		"/calendar/find/{period:[a-zA-Z]+}/{year:[0-9]{4}}/{month:[0-9]{2}}/{day:[0-9]{2}}",
+		service.FindEventsHandler,
+	).Methods("GET")
 
-func NewServer(conf *config.Config, api api.API) *Server {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/hello", HelloWorldResource)
-
-	server := &http.Server{
-		Handler:      loggingMiddleware(mux),
-		Addr:         ":" + strconv.Itoa(conf.API.Port),
+	srv := &http.Server{
+		Handler:      loggingMiddleware(router),
+		Addr:         net.JoinHostPort("localhost", strconv.Itoa(cnf.Port)),
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 5 * time.Second,
 	}
-	return &Server{server, api}
+	return &API{srv}
 }
 
-func (s *Server) Start() error {
-	zap.L().Info("Server starting...", zap.String("address", s.server.Addr))
-	return s.server.ListenAndServe()
+// Start function is starting http api server on the given port.
+// This function is blocking so it must be called in separate goroutine.
+// If server start fails, CancelFunc will be called.
+func (s *API) Start(cancelFunc context.CancelFunc) {
+	zap.L().Info("HTTP server starting...", zap.String("address", s.server.Addr))
+	if err := s.server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		zap.L().Error("Failed to start http server", zap.Error(err))
+		// manually calling server shutdown
+		cancelFunc()
+	}
 }
 
-func (s *Server) Stop(timeoutCtx context.Context) error {
-	zap.L().Info("Server stopping...", zap.String("address", s.server.Addr))
-	return s.server.Shutdown(timeoutCtx)
+func (s *API) Stop(ctx context.Context) error {
+	zap.L().Info("HTTP server stopping...", zap.String("address", s.server.Addr))
+	err := s.server.Shutdown(ctx)
+	zap.L().Info("HTTP server stopped")
+	return err
 }

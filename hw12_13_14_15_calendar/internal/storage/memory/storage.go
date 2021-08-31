@@ -26,13 +26,13 @@ func (s *MemStorage) AddEvent(ctx context.Context, event storage.Event) error {
 	return nil
 }
 
-func (s *MemStorage) UpdateEvent(ctx context.Context, eventID string, event storage.Event) error {
+func (s *MemStorage) UpdateEvent(ctx context.Context, event storage.Event) error {
 	s.rw.Lock()
 	defer s.rw.Unlock()
-	if _, ok := s.store[eventID]; !ok {
+	if _, ok := s.store[event.ID]; !ok {
 		return storage.ErrEventNotFound
 	}
-	s.store[eventID] = event
+	s.store[event.ID] = event
 	return nil
 }
 
@@ -91,6 +91,6 @@ func isEventInsideTimeInterval(intervalStart, intervalEnd, eventStart, eventEnd 
 	return intervalEnd.After(eventStart) && intervalStart.Before(eventEnd)
 }
 
-func New() *MemStorage {
+func NewMemStorage() *MemStorage {
 	return &MemStorage{store: make(map[string]storage.Event)}
 }

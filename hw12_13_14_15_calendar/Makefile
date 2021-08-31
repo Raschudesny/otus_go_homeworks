@@ -8,7 +8,7 @@ build:
 	go build -v -o $(BIN) -ldflags "$(LDFLAGS)" ./cmd/calendar
 
 run: build
-	$(BIN) -config ./configs/config.yaml
+	$(BIN) --config configs/config.yaml
 
 build-img:
 	docker build \
@@ -38,3 +38,9 @@ clean:
 
 migrate:
 	goose -dir migrations postgres "user=danny password=danny dbname=calendar sslmode=disable" up
+
+generate:
+	go generate -x ./...
+
+start-evans:
+	evans api/*.proto

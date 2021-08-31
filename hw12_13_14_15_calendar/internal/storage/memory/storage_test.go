@@ -8,95 +8,97 @@ import (
 
 	"github.com/Raschudesny/otus_go_homeworks/hw12_13_14_15_calendar/internal/storage"
 	"github.com/bxcodec/faker/v3"
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 )
 
-// TODO переписать тесты на сьюты а то это какой-то кошмар
-
-func TestEmpty(t *testing.T) {
-	memStorage := New()
-	testContext := context.Background()
-	require.Equal(t, int64(0), memStorage.Size(testContext))
-	events, err := memStorage.FindEventsInInterval(testContext, time.Now().AddDate(-1, 0, 0), time.Now().AddDate(1, 0, 0))
-	require.NoError(t, err)
-	require.Empty(t, events)
-	events, err = memStorage.FindEventsByID(testContext, []string{"1", "2", "3", "4", "5"}...)
-	require.NoError(t, err)
-	require.Empty(t, events)
+func TestMemStorage(t *testing.T) {
+	suite.Run(t, new(memStorageSuite))
 }
 
-func TestDuplicatesNotAdded(t *testing.T) {
-	memStorage := New()
-	testContext := context.Background()
-	var testEvent storage.Event
-	err := faker.FakeData(&testEvent)
-	require.NoError(t, err)
-	err = memStorage.AddEvent(testContext, testEvent)
-	require.NoError(t, err)
-	err = memStorage.AddEvent(testContext, testEvent)
-	require.ErrorIs(t, err, storage.ErrEventAlreadyExists)
+type memStorageSuite struct {
+	suite.Suite
+	storage *MemStorage
+	ctx     context.Context
 }
 
-func TestUpdateEvent(t *testing.T) {
-	memStorage := New()
-	testContext := context.Background()
+func (s *memStorageSuite) SetupTest() {
+	s.storage = NewMemStorage()
+	s.ctx = context.Background()
+}
+
+func (s *memStorageSuite) TestEmpty() {
+	s.Require().Equal(int64(0), s.storage.Size(s.ctx))
+	events, err := s.storage.FindEventsInInterval(s.ctx, time.Now().AddDate(-1, 0, 0), time.Now().AddDate(1, 0, 0))
+	s.Require().NoError(err)
+	s.Require().Empty(events)
+	events, err = s.storage.FindEventsByID(s.ctx, []string{"1", "2", "3", "4", "5"}...)
+	s.Require().NoError(err)
+	s.Require().Empty(events)
+}
+
+func (s *memStorageSuite) TestDuplicatesNotAdded() {
 	var testEvent storage.Event
 	err := faker.FakeData(&testEvent)
-	require.NoError(t, err)
-	err = memStorage.AddEvent(testContext, testEvent)
-	require.NoError(t, err)
+	s.Require().NoError(err)
+	err = s.storage.AddEvent(s.ctx, testEvent)
+	s.Require().NoError(err)
+	err = s.storage.AddEvent(s.ctx, testEvent)
+	s.Require().ErrorIs(err, storage.ErrEventAlreadyExists)
+}
 
-	err = memStorage.UpdateEvent(testContext, "not existing id here", testEvent)
-	require.ErrorIs(t, err, storage.ErrEventNotFound)
+func (s *memStorageSuite) TestUpdateEvent() {
+	var testEvent storage.Event
+	err := faker.FakeData(&testEvent)
+	s.Require().NoError(err)
+	err = s.storage.AddEvent(s.ctx, testEvent)
+	s.Require().NoError(err)
+
+	err = s.storage.UpdateEvent(s.ctx, storage.Event{ID: "not existing id here"})
+	s.Require().ErrorIs(err, storage.ErrEventNotFound)
 
 	testEvent.Title = "some new title"
-	err = memStorage.UpdateEvent(testContext, testEvent.ID, testEvent)
-	require.NoError(t, err)
+	err = s.storage.UpdateEvent(s.ctx, testEvent)
+	s.Require().NoError(err)
 
-	foundEvents, err := memStorage.FindEventsByID(testContext, testEvent.ID)
-	require.NoError(t, err)
-	require.Equal(t, 1, len(foundEvents))
-	require.Equal(t, "some new title", foundEvents[0].Title)
+	foundEvents, err := s.storage.FindEventsByID(s.ctx, testEvent.ID)
+	s.Require().NoError(err)
+	s.Require().Equal(1, len(foundEvents))
+	s.Require().Equal("some new title", foundEvents[0].Title)
 }
 
-func TestDeleteEvent(t *testing.T) {
-	memStorage := New()
-	testContext := context.Background()
+func (s *memStorageSuite) TestDeleteEvent() {
 	var testEvent storage.Event
-
 	var addedEventsIds []string
 
 	// add first element
 	err := faker.FakeData(&testEvent)
-	require.NoError(t, err)
-	err = memStorage.AddEvent(testContext, testEvent)
-	require.NoError(t, err)
+	s.Require().NoError(err)
+	err = s.storage.AddEvent(s.ctx, testEvent)
+	s.Require().NoError(err)
 	addedEventsIds = append(addedEventsIds, testEvent.ID)
 
 	// add second element
 	err = faker.FakeData(&testEvent)
-	require.NoError(t, err)
-	err = memStorage.AddEvent(testContext, testEvent)
-	require.NoError(t, err)
+	s.Require().NoError(err)
+	err = s.storage.AddEvent(s.ctx, testEvent)
+	s.Require().NoError(err)
 	addedEventsIds = append(addedEventsIds, testEvent.ID)
 
-	// try delete not exist el
-	err = memStorage.DeleteEvent(testContext, "123456")
-	require.ErrorIs(t, err, storage.ErrEventNotFound)
+	// try to delete not existing el
+	err = s.storage.DeleteEvent(s.ctx, "123456")
+	s.Require().ErrorIs(err, storage.ErrEventNotFound)
 
 	for _, eventID := range addedEventsIds {
-		err := memStorage.DeleteEvent(testContext, eventID)
-		require.NoError(t, err)
+		err := s.storage.DeleteEvent(s.ctx, eventID)
+		s.Require().NoError(err)
 	}
-	require.Equal(t, int64(0), memStorage.Size(testContext))
+	s.Require().Equal(int64(0), s.storage.Size(s.ctx))
 }
 
-func TestMemStorageBaseUsageConcurrently(t *testing.T) {
+func (s *memStorageSuite) TestMemStorageBaseUsageConcurrently() {
 	var wg sync.WaitGroup
-	memStorage := New()
 	concurrentUsers := 4
 	numOfUserEvents := 5000
-	background := context.Background()
 
 	for i := 0; i < concurrentUsers; i++ {
 		wg.Add(1)
@@ -111,9 +113,9 @@ func TestMemStorageBaseUsageConcurrently(t *testing.T) {
 				testEvent.StartTime = offset.AddDate(0, 0, j).Add(time.Millisecond)
 				// force event duration to be equal to 1 day
 				testEvent.EndTime = testEvent.StartTime.AddDate(0, 0, 1)
-				require.NoError(t, err)
-				err = memStorage.AddEvent(background, testEvent)
-				require.NoErrorf(t, err, "testEvent: %+v", testEvent)
+				s.Require().NoError(err)
+				err = s.storage.AddEvent(s.ctx, testEvent)
+				s.Require().NoErrorf(err, "testEvent: %+v", testEvent)
 
 				wg.Add(1)
 				if j%2 == 0 {
@@ -121,39 +123,38 @@ func TestMemStorageBaseUsageConcurrently(t *testing.T) {
 					go func(testEvent storage.Event) {
 						defer wg.Done()
 						testEvent.Title = "updated event"
-						err := memStorage.UpdateEvent(background, testEvent.ID, testEvent)
-						require.NoError(t, err)
+						err := s.storage.UpdateEvent(s.ctx, testEvent)
+						s.Require().NoError(err)
 					}(testEvent)
 				} else {
 					go func(testEvent storage.Event) {
 						defer wg.Done()
-						err := memStorage.DeleteEvent(background, testEvent.ID)
-						require.NoError(t, err)
+						err := s.storage.DeleteEvent(s.ctx, testEvent.ID)
+						s.Require().NoError(err)
 					}(testEvent)
 				}
 			}
 		}(datesOffset)
 	}
 	wg.Wait()
-	require.Equal(t, memStorage.Size(background), int64(concurrentUsers*numOfUserEvents/2))
+	s.Require().Equal(s.storage.Size(s.ctx), int64(concurrentUsers*numOfUserEvents/2))
 }
 
-func TestFindEventsInInterval(t *testing.T) {
-	memStorage := New()
+func (s *memStorageSuite) TestFindEventsInInterval() {
 	numOfTestEvents := 5
 	allAddedEvents := make([]storage.Event, 0, numOfTestEvents)
 	for i := 0; i < numOfTestEvents; i++ {
 		var testEvent storage.Event
 		err := faker.FakeData(&testEvent)
-		require.NoError(t, err)
+		s.Require().NoError(err)
 		testEvent.StartTime = time.Now().AddDate(0, 0, i)
 		testEvent.EndTime = testEvent.StartTime.AddDate(0, 0, 1)
-		err = memStorage.AddEvent(context.Background(), testEvent)
-		require.NoError(t, err)
+		err = s.storage.AddEvent(context.Background(), testEvent)
+		s.Require().NoError(err)
 		allAddedEvents = append(allAddedEvents, testEvent)
 	}
-	events, err := memStorage.FindEventsInInterval(context.Background(), time.Now(), time.Now().AddDate(0, 0, numOfTestEvents))
-	require.NoError(t, err)
-	require.Equal(t, len(events), len(allAddedEvents))
-	require.ElementsMatch(t, events, allAddedEvents)
+	events, err := s.storage.FindEventsInInterval(context.Background(), time.Now(), time.Now().AddDate(0, 0, numOfTestEvents))
+	s.Require().NoError(err)
+	s.Require().Equal(len(events), len(allAddedEvents))
+	s.Require().ElementsMatch(events, allAddedEvents)
 }

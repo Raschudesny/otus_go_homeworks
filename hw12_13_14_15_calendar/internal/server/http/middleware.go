@@ -16,43 +16,29 @@ func loggingMiddleware(next http.Handler) http.Handler {
 		next.ServeHTTP(delegator, r)
 		latency := time.Since(start)
 
-		if delegator.responseStatusCode != nil && *delegator.responseStatusCode == http.StatusOK {
-			zap.L().Info("request",
-				zap.String("IP", r.RemoteAddr),
-				zap.String("Time", "["+start.Format(RequestTimeFormat)+"]"),
-				zap.String("Method", r.Method),
-				zap.String("Path", r.URL.Path),
-				zap.String("Version", r.Proto),
-				zap.Int("Status", 200),
-				zap.Duration("Latency(ms)", latency),
-				zap.String("User-Agent", r.UserAgent()),
-			)
-		}
+		zap.L().Info("request",
+			zap.String("IP", r.RemoteAddr),
+			zap.Time("Time", start),
+			zap.String("Method", r.Method),
+			zap.String("Path", r.URL.Path),
+			zap.String("Version", r.Proto),
+			zap.Int("Status", delegator.responseStatusCode),
+			zap.Duration("Latency(ms)", latency),
+			zap.String("User-Agent", r.UserAgent()),
+		)
 	})
 }
 
 type ResponseWriterDelegator struct {
-	delegator          http.ResponseWriter
-	responseStatusCode *int
+	http.ResponseWriter
+	responseStatusCode int
 }
 
 func NewResponseWriterDelegator(w http.ResponseWriter) *ResponseWriterDelegator {
-	return &ResponseWriterDelegator{w, nil}
-}
-
-func (d ResponseWriterDelegator) Header() http.Header {
-	return d.delegator.Header()
-}
-
-func (d ResponseWriterDelegator) Write(arg []byte) (int, error) {
-	return d.delegator.Write(arg)
+	return &ResponseWriterDelegator{w, http.StatusOK}
 }
 
 func (d *ResponseWriterDelegator) WriteHeader(statusCode int) {
-	d.responseStatusCode = &statusCode
-	d.delegator.WriteHeader(statusCode)
-}
-
-func (d ResponseWriterDelegator) GetResponseStatusCode() *int {
-	return d.responseStatusCode
+	d.responseStatusCode = statusCode
+	d.ResponseWriter.WriteHeader(statusCode)
 }

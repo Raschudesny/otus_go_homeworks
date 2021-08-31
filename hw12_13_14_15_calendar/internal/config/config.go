@@ -3,6 +3,8 @@ package config
 import (
 	"errors"
 	"fmt"
+	"os"
+	"path"
 
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
@@ -11,20 +13,23 @@ import (
 const configErrorCausedFallthroughToDefaultsMsg = "configuration file error detected, default value will be used"
 
 var (
-	ErrLoggerLevelIsEmpty = errors.New("logger level is empty")
-	ErrLoggerFileIsEmpty  = errors.New("logger output file path is empty")
-	ErrDBHostIsEmpty      = errors.New("db host is empty")
-	ErrDBPortIsInvalid    = errors.New("db port is invalid")
-	ErrDBUsernameIsEmpty  = errors.New("db username is empty")
-	ErrDBPassIsEmpty      = errors.New("db pass is empty")
-	ErrDBDBIsEmpty        = errors.New("database name is empty")
-	ErrAPIPortIsInvalid   = errors.New("api port is invalid")
+	ErrLoggerLevelIsEmpty   = errors.New("logger level is empty")
+	ErrLoggerFileIsEmpty    = errors.New("logger output file path is empty")
+	ErrDBHostIsEmpty        = errors.New("db host is empty")
+	ErrDBPortIsInvalid      = errors.New("db port is invalid")
+	ErrDBUsernameIsEmpty    = errors.New("db username is empty")
+	ErrDBPassIsEmpty        = errors.New("db pass is empty")
+	ErrDBDBIsEmpty          = errors.New("database name is empty")
+	ErrHTTPPortIsInvalid    = errors.New("http port is invalid")
+	ErrHTTPTimeoutIsInvalid = errors.New("http connection timeout is invalid")
+	ErrGRPCPortIsInvalid    = errors.New("grpc port is invalid")
+	ErrGRPCTimeoutIsInvalid = errors.New("grpc connection timeout is invalid")
 )
 
 type Config struct {
 	Logger  LoggerConfig
 	Storage StorageConfig
-	API     APIConfig `mapstructure:"api"`
+	API     APIConfig
 }
 
 type LoggerConfig struct {
@@ -46,6 +51,15 @@ type DBConfig struct {
 }
 
 type APIConfig struct {
+	GRPC GRPCApiConfig `mapstructure:"grpc"`
+	HTTP HTTPApiConfig `mapstructure:"http"`
+}
+
+type GRPCApiConfig struct {
+	Port int
+}
+
+type HTTPApiConfig struct {
 	Port int
 }
 
@@ -74,7 +88,12 @@ func (db *DBConfig) fallthroughToDefaults() {
 
 func (conf *LoggerConfig) fallthroughToDefaults() {
 	if conf.File == "" {
-		conf.File = "./log_output"
+		defaultLogPath := "./log_output"
+		dir, err := os.Getwd()
+		if err == nil {
+			defaultLogPath = path.Join(dir, defaultLogPath)
+		}
+		conf.File = defaultLogPath
 		zap.L().Error(configErrorCausedFallthroughToDefaultsMsg, zap.Error(ErrLoggerFileIsEmpty), zap.String("default", conf.File))
 	}
 	if conf.Level == "" {
@@ -89,14 +108,18 @@ func (conf *StorageConfig) fallthroughToDefaults() {
 	}
 }
 
-func (conf APIConfig) fallthroughToDefaults() {
-	if conf.Port == 0 {
-		conf.Port = 9933
-		zap.L().Error(configErrorCausedFallthroughToDefaultsMsg, zap.Error(ErrAPIPortIsInvalid), zap.Int("default", conf.Port))
+func (conf *APIConfig) fallthroughToDefaults() {
+	if conf.HTTP.Port == 0 {
+		conf.HTTP.Port = 80
+		zap.L().Error(configErrorCausedFallthroughToDefaultsMsg, zap.Error(ErrHTTPPortIsInvalid), zap.Int("default", conf.HTTP.Port))
+	}
+	if conf.GRPC.Port == 0 {
+		conf.GRPC.Port = 50051
+		zap.L().Error(configErrorCausedFallthroughToDefaultsMsg, zap.Error(ErrGRPCPortIsInvalid), zap.Int("default", conf.GRPC.Port))
 	}
 }
 
-func (conf Config) fallthroughToDefaults() {
+func (conf *Config) fallthroughToDefaults() {
 	conf.Storage.fallthroughToDefaults()
 	conf.Logger.fallthroughToDefaults()
 	conf.API.fallthroughToDefaults()
